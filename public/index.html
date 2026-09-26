@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ashe</title>
+<meta name="description" content="an ash tree on solana that buys itself back and burns. jev decides when.">
+<meta name="theme-color" content="#14120f">
+<meta name="color-scheme" content="dark">
+<meta property="og:title" content="ashe">
+<meta property="og:description" content="an ash tree on solana that buys itself back and burns. jev decides when.">
+<link rel="icon" href="/ashe.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,100..900,0..100,0..1;1,9..144,100..900,0..100,0..1&family=Martian+Mono:wdth,wght@75..112.5,100..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+<div class="warmth" aria-hidden="true"></div>
+
+<nav class="fuse mono" aria-label="sections">
+  <span class="fuse-line"><i class="fuse-burn"></i><b class="fuse-head"></b></span>
+  <a href="#top" data-sec="top">I</a>
+  <a href="#ledger" data-sec="ledger">II</a>
+  <a href="#mind" data-sec="mind">III</a>
+</nav>
+
+<div class="stage-wrap">
+  <section class="stage" id="top">
+    <canvas id="tree" aria-hidden="true"></canvas>
+    <div class="marks" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+    <div class="notes mono" aria-hidden="true">
+      <div class="note" id="note-crown"><b>a.</b> <span>crown</span></div>
+      <div class="note" id="note-trunk"><b>b.</b> <span>heartwood</span></div>
+      <div class="note" id="note-ash"><b>c.</b> <span>ash</span></div>
+      <div class="note left" id="note-moth"><span>ashe, resting</span> <b>d.</b></div>
+    </div>
+
+    <header class="head">
+      <h1 class="brand"><span class="brand-moth" id="brand-moth"></span><span class="brand-word">ashe</span><span class="mono pl">pl. I</span></h1>
+      <nav class="mono">
+        <a href="#ledger"><i>[</i> ledger <i>]</i></a>
+        <a href="#mind"><i>[</i> mind <i>]</i></a>
+      </nav>
+    </header>
+
+    <div class="hero">
+      <div class="hero-pct"><span id="pct">0.00</span><sup>%</sup></div>
+      <p class="hero-cap mono">of the supply is ash</p>
+      <p class="lede">a moth, a burning ash tree, and a token on solana that buys itself back and burns. <em>jev decides when.</em></p>
+    </div>
+
+    <div class="projection" aria-hidden="true">
+      <p class="mono proj-tag"><i></i> projection, not the ledger</p>
+      <div class="proj-pct"><span id="proj-pct">0.00</span><sup>%</sup></div>
+      <p class="proj-line">keep scrolling. this is where <em>every burn</em> is heading.</p>
+    </div>
+
+    <p class="species" aria-hidden="true"><span class="mono">fig. 1</span> ashe, a moth, in fraxinus ardens, <em>the burning ash</em></p>
+
+    <footer class="foot mono">
+      <dl class="readouts">
+        <div><dt>block</dt><dd id="r-block">·</dd></div>
+        <div><dt>burns</dt><dd id="r-burns">·</dd></div>
+        <div><dt>sol through the fire</dt><dd id="r-eth">·</dd></div>
+        <div><dt>price, sol</dt><dd id="r-price">·</dd></div>
+      </dl>
+      <div class="status">
+        <span class="tag" id="mode" hidden></span>
+        <span class="dot" aria-hidden="true"></span>
+        <span id="status">reaching the chain</span>
+        <span class="next" id="next"></span>
+      </div>
+    </footer>
+  </section>
+</div>
+
+<main>
+  <div class="ticker" aria-hidden="true"><div class="ticker-run" id="ticker"></div></div>
+
+  <section class="plate" id="ledger">
+    <span class="ghost" aria-hidden="true">II</span>
+    <header class="plate-head">
+      <span class="mono pl reveal">pl. II</span>
+      <h2>the ledger</h2>
+      <p class="mono sub reveal">every buyback, every burn, straight from the chain</p>
+    </header>
+
+    <div class="log reveal">
+      <div class="log-bar"><div class="log-ash" id="log-ash"><span class="log-edge"></span></div>
+        <div class="log-ticks mono" id="log-ticks"><i style="left:1%" data-at="1"><b>1%</b></i><i style="left:5%" data-at="5"><b>5%</b></i><i style="left:10%" data-at="10"><b>10%</b></i><i style="left:25%" data-at="25"><b>25%</b></i><i style="left:50%" data-at="50"><b>50%</b></i></div>
+      </div>
+      <div class="log-legend mono"><span><b id="s-burned">·</b> burned</span><span id="s-next"></span><span><b id="s-left">·</b> of one billion still standing</span></div>
+    </div>
+
+    <figure class="chart reveal">
+      <svg id="chart" viewBox="0 0 1000 240" preserveAspectRatio="none" aria-label="cumulative tokens burned">
+        <defs>
+          <linearGradient id="heat" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ff6b2c" stop-opacity=".34"/>
+            <stop offset="1" stop-color="#ff6b2c" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path id="chart-area" fill="url(#heat)"/>
+        <path id="chart-line" pathLength="1"/>
+      </svg>
+      <span class="chart-tip" id="chart-tip"></span>
+      <figcaption class="mono"><span id="c-from"></span><span>cumulative burn</span><span id="c-to"></span></figcaption>
+    </figure>
+
+    <div class="table-wrap reveal">
+      <table class="mono">
+        <thead><tr><th>when</th><th class="r">sol in</th><th class="r">tokens burned</th><th>venue</th><th>called by</th><th class="r">tx</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p class="empty mono" id="empty" hidden>nothing burned yet. the furnace is cold.</p>
+      <button class="more mono" id="more" hidden><i>[</i> older burns <i>]</i></button>
+    </div>
+  </section>
+
+  <section class="plate" id="mind">
+    <span class="ghost" aria-hidden="true">III</span>
+    <header class="plate-head">
+      <span class="mono pl reveal">pl. III</span>
+      <h2>the mind</h2>
+      <p class="mono sub reveal">where the money comes from, and how jev spends it</p>
+    </header>
+
+    <p class="statement reveal">jev decides <em>when</em> ashe buys. everything she buys is <em>burned</em>.</p>
+
+    <div class="fuel reveal" id="fuel">
+      <div class="fuel-head">
+        <h3>where the money comes from</h3>
+        <p>every trade of the token on pump.fun pays a creator fee. all of it lands in the furnace.</p>
+      </div>
+      <div class="fuel-body">
+        <div class="fuel-bar" id="fuel-bar"><i class="to-furnace"></i><i class="to-pons"></i></div>
+        <div class="fuel-legend mono"><span><b id="fuel-furnace">·</b> creator fees go to the furnace</span><span><b id="fuel-pons">·</b></span></div>
+        <ul class="fuel-lines" id="fuel-lines"></ul>
+      </div>
+    </div>
+
+    <figure class="flow reveal" id="flow">
+      <div class="flow-scroll">
+        <svg viewBox="0 0 1200 400" role="img" aria-label="how a look becomes a burn: fees and the market go to jev, jev answers four questions, and if the gate opens the furnace buys and burns">
+          <g class="f-paths">
+            <path id="p-fees" d="M128 120 L330 120"/>
+            <path id="p-furnace" d="M350 122 C 440 130, 470 172, 541 188"/>
+            <path id="p-market" d="M238 298 C 360 290, 452 242, 544 214"/>
+            <path id="p-jevbuy" d="M660 200 L858 200"/>
+            <path id="p-buyburn" d="M882 200 L1066 200"/>
+            <path class="f-spoke" d="M566 150 L528 92"/><path class="f-spoke" d="M634 150 L672 92"/>
+            <path class="f-spoke" d="M566 250 L528 308"/><path class="f-spoke" d="M634 250 L672 308"/>
+          </g>
+
+          <g class="f-node" id="n-fees"><circle cx="120" cy="120" r="7"/><text class="f-label" x="120" y="92">creator fees</text><text class="f-sub" x="120" y="150">every trade pays in</text></g>
+          <g class="f-node" id="n-furnace"><circle cx="340" cy="120" r="9"/><text class="f-label" x="340" y="92">the furnace</text><text class="f-sub" x="340" y="150" id="f-budget">budget ·</text></g>
+          <g class="f-node" id="n-market"><circle cx="230" cy="300" r="7"/><text class="f-label" x="230" y="332">the market</text><text class="f-sub" x="230" y="349" id="f-market">price · two hours of trades</text></g>
+
+          <g class="f-chip" id="c-1"><text class="f-q" x="520" y="58">buy, or wait?</text><text class="f-val" x="520" y="84" id="f-q1">·</text></g>
+          <g class="f-chip" id="c-2"><text class="f-q" x="680" y="58">how much?</text><text class="f-val" x="680" y="84" id="f-q2">·</text></g>
+          <g class="f-chip" id="c-3"><text class="f-q" x="520" y="330">sellers winning?</text><text class="f-val" x="520" y="356" id="f-q3">·</text></g>
+          <g class="f-chip" id="c-4"><text class="f-q" x="680" y="330">chasing a pump?</text><text class="f-val" x="680" y="356" id="f-q4">·</text></g>
+
+          <g id="n-jev">
+            <circle class="f-count-track" cx="600" cy="200" r="72"/>
+            <circle class="f-count" id="f-count" cx="600" cy="200" r="72" pathLength="1" transform="rotate(-90 600 200)"/>
+            <circle class="f-core" cx="600" cy="200" r="58"/>
+            <circle class="f-think" cx="600" cy="200" r="64" pathLength="1"/>
+            <text class="f-jev" x="600" y="196">jev</text>
+            <text class="f-verdict" x="600" y="224" id="f-verdict">looking</text>
+          </g>
+
+          <g id="n-gate"><line class="f-gate" x1="752" y1="176" x2="752" y2="224"/><text class="f-sub" x="752" y="252" id="f-gate">the gate</text></g>
+          <g class="f-node" id="n-buy"><circle cx="870" cy="200" r="10"/><text class="f-label" x="870" y="166">the buy</text><text class="f-sub" x="870" y="238" id="f-buy">·</text></g>
+          <g class="f-node" id="n-burn"><circle cx="1080" cy="200" r="13"/><path class="f-flame" d="M1080 189 C 1087 196, 1088 203, 1080 210 C 1072 203, 1073 196, 1080 189 Z"/><text class="f-label" x="1080" y="166">the burn</text><text class="f-sub" x="1080" y="238" id="f-burn">supply falls, for good</text></g>
+
+          <g id="f-particles"></g>
+        </svg>
+      </div>
+      <ol class="flow-steps">
+        <li><span class="mono">1</span><b>fees come in</b> trades pay the furnace.</li>
+        <li><span class="mono">2</span><b>jev decides</b> buy now, or wait? how much?</li>
+        <li><span class="mono">3</span><b>buy, then burn</b> bought tokens are destroyed at once.</li>
+      </ol>
+      <figcaption class="mono"><span id="f-cap">live. this plays every time jev looks.</span><button class="link" id="f-replay"><i>[</i> replay the last look <i>]</i></button></figcaption>
+    </figure>
+
+    <div class="mind-grid">
+      <div class="mind-copy reveal">
+        <h3>the rules jev plays by</h3>
+        <ol class="rules" id="rules"></ol>
+      </div>
+
+      <article class="card reveal armed" id="card">
+        <div class="card-top mono">
+          <span id="d-when">no looks yet</span>
+          <button class="link" id="d-latest" hidden>back to latest</button>
+        </div>
+        <div class="verdict">
+          <div>
+            <div class="mono label">verdict</div>
+            <div class="verdict-word" id="d-verdict">·</div>
+          </div>
+          <svg class="gauge" viewBox="0 0 120 120" aria-hidden="true">
+            <circle cx="60" cy="60" r="52" class="gauge-track"/>
+            <circle cx="60" cy="60" r="52" class="gauge-fill" id="d-gauge" pathLength="1"/>
+            <text x="60" y="58" class="gauge-num" id="d-conf">·</text>
+            <text x="60" y="76" class="gauge-cap">confidence</text>
+          </svg>
+        </div>
+
+        <ul class="trace mono" id="d-trace"></ul>
+        <div class="strip" id="strip" aria-label="recent looks"></div>
+      </article>
+    </div>
+  </section>
+
+  <footer class="colophon">
+    <div class="plate-head reveal">
+      <span class="mono pl">colophon</span>
+    </div>
+    <div class="colophon-grid">
+      <div>
+        <dl class="addrs mono reveal" id="addrs"></dl>
+        <p class="fine mono reveal">nothing in the browser signs anything. the page observes the chain and reports what it observes. <span id="fine-mode"></span></p>
+        <p class="fine mono reveal">set in fraunces and martian mono. ink on dark paper, one ember.</p>
+      </div>
+      <div class="colophon-moth reveal" id="colophon-moth"></div>
+    </div>
+    <div class="wordmark" aria-hidden="true"><span class="wm-ink">ashe</span><span class="wm-fire">ashe</span></div>
+  </footer>
+</main>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>

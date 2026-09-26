@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+
+# secrets: the furnace's private key and the jev api key live here. never commit.
+.env
+.env.*
+!.env.example
+
+# runtime state: the ledger and jev's decision history
+data/
+
+# render scratch
+brand/.frames/
+
+# local tooling and os/editor noise
+.impeccable/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

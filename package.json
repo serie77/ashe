@@ -1,0 +1,25 @@
+{
+  "name": "ashe",
+  "version": "1.0.0",
+  "description": "ashe: a jev-driven buy and burn furnace on robinhood chain",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node src/index.js",
+    "wallet": "node scripts/wallet.js",
+    "verify": "node scripts/verify.js",
+    "testnet": "node scripts/testnet.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "ethers": "^6.13.4"
+  },
+  "devDependencies": {
+    "fontkit": "^2.0.4",
+    "gifenc": "^1.0.3",
+    "pngjs": "^7.0.0",
+    "puppeteer-core": "^25.11.0"
+  }
+}

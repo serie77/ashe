@@ -1,0 +1,120 @@
+<!doctype html>
+<!-- the launch animation: the tree grows, "ashe" writes itself on the left, the crown catches, the fire takes the
+     whole crown while the letters fill with it from the ground up and ashe flies away.
+     rendered frame by frame by brand/tweet.mjs. the page's clock is stepped by hand so every frame is exact. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; background: #14120f; overflow: hidden; }
+  .stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #14120f; }
+  /* the tree draws itself right of centre; the canvas is shifted so the trunk lands in the middle of the frame */
+  #tree { position: absolute; left: -298px; top: 0; width: 1920px; height: 1080px; }
+  .fade { position: absolute; inset: 0; background: #14120f; opacity: 0; }
+
+  /* the word: real fraunces outlines, traced in ink, then filled with fire from the ground up like the footer */
+  .word { position: absolute; overflow: visible; }
+  .trace path { fill: none; stroke: rgba(232, 224, 207, 0.62); stroke-width: 2px; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
+  .pen { fill: #ffc26b; filter: drop-shadow(0 0 10px #ff6b2c); }
+  .fill { filter: drop-shadow(0 0 34px rgba(255, 107, 44, 0.38)); }
+  .fill path { fill: url(#fire); }
+</style>
+</head>
+<body>
+<div class="stage">
+  <canvas id="tree"></canvas>
+  <svg class="word" id="word" aria-hidden="true">
+    <defs>
+      <linearGradient id="fire" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffc26b"/><stop offset="0.45" stop-color="#ff6b2c"/><stop offset="1" stop-color="#7a2a0c"/></linearGradient>
+      <clipPath id="rise"><rect id="rise-rect" x="0" y="0" width="0" height="0"/></clipPath>
+    </defs>
+    <g class="trace" id="trace"></g>
+    <g class="fill" id="fill" clip-path="url(#rise)"></g>
+  </svg>
+  <div class="fade" id="fade"></div>
+</div>
+<script>
+  let clock = 0;
+  const queue = [];
+  performance.now = () => clock;
+  window.requestAnimationFrame = (cb) => (queue.push(cb), queue.length);
+  window.step = (dt) => {
+    clock += dt;
+    for (const cb of queue.splice(0)) cb(clock);
+    return clock;
+  };
+
+  const NS = 'http://www.w3.org/2000/svg';
+  let word = null;
+  // glyphs come in as outline commands at two weights (a: thin, b: heavy), in font units with y up
+  window.setWord = ({ glyphs, upm, ascent, descent, size, left, baseline }) => {
+    const s = size / upm;
+    const last = glyphs[glyphs.length - 1];
+    const width = Math.max(last.xA + last.advA, last.xB + last.advB);
+    const svg = document.getElementById('word');
+    svg.setAttribute('viewBox', `0 ${-ascent} ${width} ${ascent - descent}`);
+    svg.style.width = width * s + 'px';
+    svg.style.height = (ascent - descent) * s + 'px';
+    svg.style.left = left + 'px';
+    svg.style.top = baseline - ascent * s + 'px';
+    document.getElementById('rise-rect').setAttribute('width', width);
+    word = {
+      ascent, descent,
+      glyphs: glyphs.map((g) => {
+        const trace = document.createElementNS(NS, 'path');
+        const fill = document.createElementNS(NS, 'path');
+        const pen = document.createElementNS(NS, 'circle');
+        pen.setAttribute('r', 34);
+        pen.setAttribute('class', 'pen');
+        document.getElementById('trace').append(trace, pen);
+        document.getElementById('fill').append(fill);
+        return { ...g, trace, fill, pen, len: 0 };
+      }),
+    };
+    wordFrame({ write: glyphs.map(() => 0), fire: 0, k: 0 });
+  };
+  // one outline, k of the way from thin to heavy. svg y runs down, so font y is flipped.
+  const outline = (g, k) => {
+    const x = g.xA + (g.xB - g.xA) * k;
+    let d = '';
+    for (let i = 0; i < g.a.length; i++) {
+      const A = g.a[i], B = g.b[i];
+      d += A[0];
+      for (let j = 1; j < A.length; j += 2) d += ` ${(x + A[j] + (B[j] - A[j]) * k).toFixed(1)} ${(-(A[j + 1] + (B[j + 1] - A[j + 1]) * k)).toFixed(1)}`;
+    }
+    return d;
+  };
+  // write: 0..1 per letter, the pen tracing its outline. fire: 0..1, the fill rising. k: 0..1, thin to heavy.
+  window.wordFrame = ({ write, fire, k }) => {
+    if (!word) return;
+    word.glyphs.forEach((g, i) => {
+      const d = outline(g, k);
+      g.trace.setAttribute('d', d);
+      g.fill.setAttribute('d', d);
+      if (k === 0) g.len = g.trace.getTotalLength();
+      const w = write[i];
+      g.trace.style.strokeDasharray = g.len;
+      g.trace.style.strokeDashoffset = g.len * (1 - w);
+      g.trace.style.opacity = w > 0 ? 1 - fire * 0.7 : 0;
+      const writing = w > 0 && w < 1;
+      g.pen.style.opacity = writing ? 1 : 0;
+      if (writing) {
+        const p = g.trace.getPointAtLength(g.len * w);
+        g.pen.setAttribute('cx', p.x);
+        g.pen.setAttribute('cy', p.y);
+      }
+    });
+    const H = word.ascent - word.descent;
+    const rect = document.getElementById('rise-rect');
+    rect.setAttribute('y', -word.ascent + H * (1 - fire));
+    rect.setAttribute('height', H * fire);
+  };
+</script>
+<script type="module">
+  import { createTree } from '/public/tree.js';
+  window.tree = createTree(document.getElementById('tree'));
+  window.tree.setBurned(0); // whole, until the projection lights it
+  window.ready = true;
+</script>
+</body>
+</html>

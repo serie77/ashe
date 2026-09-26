@@ -1,0 +1,45 @@
+<!doctype html>
+<!-- the x banner. rendered to png by brand/banner.mjs from the same tree and moth the site draws. 1500 x 500. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,100..900,0..100,0..1;1,9..144,100..900,0..100,0..1&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: #14120f; }
+  .banner { position: relative; width: 1500px; height: 500px; overflow: hidden; background: #14120f; color: #e8e0cf; font-family: 'Fraunces', Georgia, serif; font-weight: 300; }
+  #tree { position: absolute; right: 0; top: 11px; width: 900px; height: 559px; } /* sized so the crown starts at y 25 and the ground sits at y 470 */
+
+  .lockup { position: absolute; left: 76px; top: 64px; display: flex; align-items: center; gap: 4px; }
+  .lockup .moth { width: 212px; flex: none; margin-top: 0.13em; font-size: 232px; } /* nudged down onto the x-height, where the word's weight sits */
+  .word {
+    font-size: 232px; line-height: 1; letter-spacing: -0.035em; padding-right: 0.08em;
+    font-variation-settings: 'opsz' 144, 'wght' 400, 'WONK' 1;
+    color: transparent; background: linear-gradient(0deg, #ffc26b, #ff6b2c 30%, #e0301e 55%, #ff6b2c 80%, #ffc26b);
+    background-size: 100% 300%; background-position: 0 16%; -webkit-background-clip: text; background-clip: text;
+    filter: drop-shadow(0 0 34px rgba(255, 90, 40, 0.4));
+  }
+  /* ashe as inline svg, same rules as the site */
+  .moth-svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .moth-svg path, .moth-svg circle { fill: none; stroke: #e8e0cf; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; }
+  .moth-svg .mo-vein { stroke-width: max(0.7px, 2.2px - var(--l) * 0.3px); opacity: calc(1 - var(--l) * 0.07); }
+  .moth-svg .mo-vein.hind { opacity: calc(0.62 - var(--l) * 0.04); }
+  .moth-svg .mo-hot { stroke: #ff6b2c; stroke-width: 1.4px; filter: drop-shadow(0 0 6px #ff6b2c); }
+  .moth-svg .mo-body { fill: #e8e0cf; stroke: none; }
+</style>
+</head>
+<body>
+<div class="banner">
+  <canvas id="tree"></canvas>
+  <div class="lockup"><span class="moth" id="moth"></span><span class="word">ashe</span></div>
+</div>
+<script type="module">
+  import { createTree } from '/public/tree.js';
+  import { mothSvg } from '/public/mothsvg.js';
+  document.getElementById('moth').innerHTML = mothSvg({ levels: 4 });
+  const tree = createTree(document.getElementById('tree'));
+  tree.setBurned(0.18);
+  document.fonts.ready.then(() => (document.body.dataset.fonts = '1'));
+</script>
+</body>
+</html>
