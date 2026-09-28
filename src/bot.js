@@ -27,9 +27,9 @@ export const RULES = {
   intervalSec: config.intervalSec,
   minConfidence: config.minConfidence,
   chasingMax: 0.7, // never buy when jev's "chasing a pump" read is at or above this
-  sizeMin: 0.15, // share of the budget for jev's smallest size
-  sizeMax: 0.6, // and for its largest
-  heartbeatFrac: 0.2,
+  sizeMin: 0.3, // share of the budget for jev's smallest size
+  sizeMax: 0.8, // and for its largest
+  heartbeatFrac: 0.4,
   maxIdleMin: config.maxIdleMin,
   minBuyEth: config.minBuyEth,
   maxBuyEth: config.maxBuyEth,

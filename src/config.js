@@ -39,7 +39,7 @@ export const config = {
 
   intervalSec: num('INTERVAL_SEC', 60),
   minBuyEth: num('MIN_BUY_ETH', 0.0005),
-  maxBuyEth: num('MAX_BUY_ETH', 0.05),
+  maxBuyEth: num('MAX_BUY_ETH', 0.2),
   gasReserveEth: num('GAS_RESERVE_ETH', 0.0003),
   slippageBps: num('SLIPPAGE_BPS', 300),
   minConfidence: num('MIN_CONFIDENCE', 0.55),

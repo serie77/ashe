@@ -6,10 +6,10 @@ const questions = {
   action: {
     type: 'choice',
     instructions:
-      'A buyback bot holds `furnace.budget_eth` to buy its own token and burn it. Looking at `market`, should it buy right now or wait for a better entry?',
+      'A buyback-and-burn furnace holds `furnace.budget_eth` of creator fees whose only job is to buy its own token and burn it, steadily. Holding the budget earns nothing. Looking at `market`, should it buy right now, or is this one of the rare moments to hold off?',
     criteria: {
-      buy_now: 'Price is dipping or sellers are active, so a buy absorbs sells and gets more tokens per ETH. Also right when the market is calm and the bot has been idle a long time.',
-      wait: 'Price is spiking on other buyers and a buy would chase the pump, or the bot bought very recently and nothing has changed since.',
+      buy_now: 'The default. Price is flat, calm, cooling off or dipping, or trading is quiet: a steady buyback is exactly what the furnace is for. Especially right when sellers are active or the furnace has been idle a few minutes.',
+      wait: 'Only when price is spiking hard right now on other buyers and sits at its recent high, so a buy would chase the pump.',
     },
   },
   size: {
