@@ -72,9 +72,11 @@ function marketStats(trades, head, price) {
 
 async function think(launch) {
   const minWei = ethers.parseEther(String(config.minBuyEth));
-  await chain.collectFees(launch, minWei);
+  const claimed = await chain.collectFees(launch, minWei);
+  if (claimed) console.log(`claimed ${eth(claimed)} ETH of creator fees`);
   const leftover = await chain.burnLeftovers(launch);
   if (leftover) {
+    console.log(`burned ${eth(leftover.tokensBurned)} ${launch.symbol} already in the wallet · ${config.explorer}/tx/${leftover.burnTx}`);
     addBurn({ ts: Date.now(), block: live.head, ethSpent: '0', tokensBurned: leftover.tokensBurned.toString(), venue: null, buyTx: null, burnTx: leftover.burnTx, reason: 'sweep' });
     events.emit('burn');
   }
@@ -83,6 +85,7 @@ async function think(launch) {
   const budget = config.dryRun ? config.dryBudgetEth : Math.max(0, eth(live.furnace.balance) - config.gasReserveEth);
   if (budget < config.minBuyEth) {
     live.status = 'waiting for fees';
+    console.log(`waiting for fees · ${round(budget, 6)} ETH spendable, needs ${config.minBuyEth}`);
     return;
   }
 
@@ -127,6 +130,11 @@ async function think(launch) {
     }
   }
   addDecision(decision);
+  const said = `jev: ${jev.choice === 'buy_now' ? 'buy' : 'wait'} @ ${jev.confidence.toFixed(2)}, chasing ${jev.chasing.toFixed(2)}`;
+  if (decision.outcome === 'burned') console.log(`${said} · bought and burned ${decision.tokens} ${launch.symbol} for ${decision.amountEth} ETH · ${config.explorer}/tx/${decision.burnTx}`);
+  else if (decision.outcome === 'rehearsed') console.log(`${said} · rehearsed a ${decision.amountEth} ETH buy, nothing sent`);
+  else if (decision.outcome === 'failed') console.log(`${said} · buy failed, retrying next cycle`);
+  else console.log(`${said} · held · budget ${round(budget, 6)} ETH · heartbeat in ${Math.max(0, config.maxIdleMin - idleMin)} min`);
   live.status = { waited: 'jev says wait', rehearsed: 'rehearsed a burn', burned: 'burned', failed: 'last attempt failed, will retry' }[decision.outcome];
 }
 

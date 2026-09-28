@@ -479,3 +479,5 @@ tbody tr.ignite td { animation: cool 4.5s var(--ease) var(--age, 0ms) both; }
 #f-cap::after { content: '\258C'; margin-left: 2px; color: var(--hot); opacity: 0; }
 .flow.typing #f-cap::after { opacity: 1; animation: dot 0.8s steps(1) infinite; }
 @media (prefers-reduced-motion: reduce) { .f-halo, #f-synapse line, .strip button, .f-caret { animation: none !important; } }
+
+.fuel[hidden] { display: none; }
