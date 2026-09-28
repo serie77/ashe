@@ -149,10 +149,10 @@ function paintFuel(f) {
   $('fuel-furnace').textContent = pc(furnace);
   $('fuel-pons').textContent = pc(total - furnace);
   $('fuel-lines').innerHTML =
-    `<li><b>${pc(f.tradeFeeBps)}</b><span>the pons trade fee. pons keeps ${pc(f.ponsShareBps)} of it, the furnace gets the rest.</span></li>` +
-    (f.creatorTaxBps ? `<li><b>${pc(f.creatorTaxBps)}</b><span>the creator tax, fixed when the token launched. all of it goes to the furnace.</span></li>` : '') +
+    `<li><b>${pc(f.tradeFeeBps)}</b><span>the pons trade fee. pons keeps ${pc(f.ponsShareBps)} of it, the creator side gets the rest.</span></li>` +
+    (f.creatorTaxBps ? `<li><b>${pc(f.creatorTaxBps)}</b><span>the creator tax, fixed when the token launched, paid to the creator side.</span></li>` : '') +
     (locked ? `<li><b>${pc(locked)}</b><span>is taken by pons's own buyback-and-lock, which this launch has switched on.</span></li>` : '') +
-    `<li><i>then</i><span>the fees wait in the pons escrow. the furnace claims them, and that is its whole budget. nothing else goes in.</span></li>`;
+    `<li><i>then</i><span>the fees wait in the pons escrow. the furnace claims from there, and what it claims is what it spends on buybacks.</span></li>`;
 }
 
 // why the furnace did what it did on one look, line by line

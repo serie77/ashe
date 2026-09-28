@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import { config } from './config.js';
 import * as chain from './chain.js';
 import { askJev } from './jev.js';
-import { ledger, openLedger, addBurn, addDecision, syncBurns } from './ledger.js';
+import { ledger, openLedger, addBurn, addDecision, syncBurns, setKept } from './ledger.js';
 
 export const events = new EventEmitter();
 export const live = {
@@ -72,8 +72,9 @@ function marketStats(trades, head, price) {
 
 async function think(launch) {
   const minWei = ethers.parseEther(String(config.minBuyEth));
-  const claimed = await chain.collectFees(launch, minWei);
-  if (claimed) console.log(`claimed ${eth(claimed)} ETH of creator fees`);
+  const fees = await chain.collectFees(launch, minWei, BigInt(ledger.kept || '0'));
+  if (fees.kept.toString() !== (ledger.kept || '0')) setKept(fees.kept);
+  if (fees.claimed) console.log(`claimed ${eth(fees.claimed)} ETH of creator fees · ${eth(fees.kept)} ETH left in the escrow`);
   const leftover = await chain.burnLeftovers(launch);
   if (leftover) {
     console.log(`burned ${eth(leftover.tokensBurned)} ${launch.symbol} already in the wallet · ${config.explorer}/tx/${leftover.burnTx}`);
@@ -101,7 +102,7 @@ async function think(launch) {
   const chasing = jev.chasing >= RULES.chasingMax;
   let reason = null;
   if (jev.choice === 'buy_now' && jev.confidence >= config.minConfidence && !chasing) reason = 'jev';
-  else if (idleMin >= config.maxIdleMin && !chasing) reason = 'heartbeat';
+  else if (idleMin >= config.maxIdleMin) reason = 'heartbeat'; // the cap holds even into a pump
 
   const decision = { ts: Date.now(), ...jev, market: live.market, budgetEth: round(budget, 5), idleMin, outcome: 'waited', reason };
   phase('decided', { ts: decision.ts, jev, reason });

@@ -4,7 +4,7 @@ import { config } from './config.js';
 import { provider, readBurnLogs, readIncoming, ethSpentInTx } from './chain.js';
 
 let file;
-export const ledger = { burns: [], decisions: [], lastBlock: 0 };
+export const ledger = { burns: [], decisions: [], lastBlock: 0, kept: '0' };
 
 export function openLedger(tokenAddr) {
   mkdirSync(config.dataDir, { recursive: true });
@@ -20,6 +20,11 @@ function save() {
 export function addBurn(burn) {
   ledger.burns.push(burn);
   ledger.burns.sort((a, b) => a.ts - b.ts);
+  save();
+}
+
+export function setKept(wei) {
+  ledger.kept = wei.toString();
   save();
 }
 

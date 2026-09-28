@@ -43,7 +43,8 @@ export const config = {
   gasReserveEth: num('GAS_RESERVE_ETH', 0.0003),
   slippageBps: num('SLIPPAGE_BPS', 300),
   minConfidence: num('MIN_CONFIDENCE', 0.55),
-  maxIdleMin: num('MAX_IDLE_MIN', 45),
+  feeKeepBps: num('FEE_KEEP_BPS', 4000), // share of creator fees left in the pons escrow, never claimed by the bot
+  maxIdleMin: num('MAX_IDLE_MIN', 5), // hard cap: never more than this many minutes without a buyback and burn
 
   dataDir: env.DATA_DIR || 'data',
 };

@@ -33,7 +33,7 @@ const abi = {
     'event CurveBuy(address indexed buyer, address indexed recipient, uint256 quoteIn, uint256 tokensOut, uint256 fee, uint256 tax)',
     'event CurveSell(address indexed seller, address indexed recipient, uint256 tokensIn, uint256 quoteOut, uint256 fee, uint256 tax)',
   ],
-  escrow: ['function balanceOf(address) view returns (uint256)', 'function claim() returns (uint256)'],
+  escrow: ['function balanceOf(address) view returns (uint256)', 'function claim() returns (uint256)', 'function claim(uint256 amount) returns (uint256)'],
   hook: [
     'function pendingCreatorTax(bytes32 poolId, address currency) view returns (uint256)',
     'function sweepPoolFees(bytes32 poolId, uint256 minConversionQuoteOut, uint256 minBuybackTokensOut)',
@@ -237,9 +237,10 @@ async function send(tx) {
   return rc;
 }
 
-// pull creator fees toward the wallet: sweep the venue if we are allowed to, then claim the escrow.
-export async function collectFees(launch, minWei) {
-  if (config.dryRun || !config.pons) return 0n;
+// pull creator fees toward the wallet: sweep the venue if we are allowed to, then claim from the escrow.
+// `kept` is what has been set aside in the escrow so far. of anything new, feeKeepBps stays there and the rest is claimed.
+export async function collectFees(launch, minWei, kept = 0n) {
+  if (config.dryRun || !config.pons) return { claimed: 0n, kept };
   try {
     if (launch.phase === 'curve') {
       const curve = contract(launch.curve, 'curve', wallet);
@@ -258,10 +259,13 @@ export async function collectFees(launch, minWei) {
     // the sweep needs the pons operator right now (a buyback leg is pending). it will come through the escrow later.
   }
   const escrow = contract(ADDR.feeEscrow, 'escrow', wallet);
-  const claimable = await escrow.balanceOf(wallet.address);
-  if (claimable < minWei) return 0n;
-  await send({ to: ADDR.feeEscrow, data: iface.escrow.encodeFunctionData('claim', []) });
-  return claimable;
+  const owed = await escrow.balanceOf(wallet.address);
+  if (owed < kept) kept = owed; // some of it was taken out by hand
+  const fresh = owed - kept;
+  const claim = (fresh * BigInt(10000 - config.feeKeepBps)) / 10000n;
+  if (claim < minWei) return { claimed: 0n, kept };
+  await send({ to: ADDR.feeEscrow, data: iface.escrow.encodeFunctionData('claim(uint256)', [claim]) });
+  return { claimed: claim, kept: kept + (fresh - claim) };
 }
 
 export async function quoteBuy(launch, amountWei) {

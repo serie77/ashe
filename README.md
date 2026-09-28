@@ -39,9 +39,9 @@ Read from chain per launch (`getLaunchFeePolicy`), and printed on the site from 
 
 - every trade pays a **1% trade fee**. pons keeps 30% of it, the creator side gets 70%
 - plus the **creator tax** chosen at launch (0-10%), which goes to the creator in full
-- fees sit in the curve (before graduation) or the v4 hook (after), get swept into the pons fee escrow, and the creator fee recipient claims them. For ashe that recipient is the furnace wallet, and it is the furnace's only budget
+- fees sit in the curve (before graduation) or the v4 hook (after), get swept into the pons fee escrow, and the creator fee recipient (the furnace wallet) claims from there to fund buybacks
 
-With a 2% tax that is 2.7% of every trade to the furnace and 0.3% to pons.
+With a 2% tax that is 2.7% of every trade to the creator side and 0.3% to pons.
 
 ## Testnet
 
