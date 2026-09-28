@@ -158,17 +158,35 @@ export async function readTrades(launch, fromBlock, toBlock) {
 }
 
 // burns of the token by `from`, oldest first
+// the public rpc caps a log query at 10M blocks, so a long history is read in windows
+const LOG_SPAN = 9_000_000;
 export async function readBurnLogs(launch, from, fromBlock, toBlock) {
   const t = iface.token.getEvent('Transfer').topicHash;
-  const logs = await provider.send('eth_getLogs', [
-    {
-      address: launch.address,
-      topics: [t, ethers.zeroPadValue(from, 32), ethers.zeroPadValue(ZERO, 32)],
-      fromBlock: ethers.toQuantity(fromBlock),
-      toBlock: ethers.toQuantity(toBlock),
-    },
-  ]);
+  const logs = [];
+  for (let start = fromBlock; start <= toBlock; start += LOG_SPAN) {
+    logs.push(...(await provider.send('eth_getLogs', [
+      {
+        address: launch.address,
+        topics: [t, ethers.zeroPadValue(from, 32), ethers.zeroPadValue(ZERO, 32)],
+        fromBlock: ethers.toQuantity(start),
+        toBlock: ethers.toQuantity(Math.min(toBlock, start + LOG_SPAN - 1)),
+      },
+    ])));
+  }
   return logs.map((log) => ({ block: Number(log.blockNumber), tx: log.transactionHash, tokens: BigInt(log.data) }));
+}
+
+// tokens arriving at `to`, oldest first. the furnace buys in one transaction and burns in the next,
+// so this is how a burn found on chain is matched back to the buy that paid for it.
+export async function readIncoming(launch, to, fromBlock, toBlock) {
+  const t = iface.token.getEvent('Transfer').topicHash;
+  const logs = [];
+  for (let start = fromBlock; start <= toBlock; start += LOG_SPAN) {
+    logs.push(...(await provider.send('eth_getLogs', [
+      { address: launch.address, topics: [t, null, ethers.zeroPadValue(to, 32)], fromBlock: ethers.toQuantity(start), toBlock: ethers.toQuantity(Math.min(toBlock, start + LOG_SPAN - 1)) },
+    ])));
+  }
+  return logs.map((log) => ({ block: Number(log.blockNumber), index: Number(log.logIndex), tx: log.transactionHash }));
 }
 
 // ETH that went into the buy inside a given transaction, if it contained one
@@ -273,20 +291,24 @@ export function buildBuyTx(launch, amountWei, minOut) {
 }
 
 // buy then burn. returns what happened, in wei.
-export async function buyAndBurn(launch, amountWei) {
+// onStep('buying' | 'burning') lets the site follow along while the transactions are in flight
+export async function buyAndBurn(launch, amountWei, onStep = () => {}) {
   const expected = await quoteBuy(launch, amountWei);
   const minOut = (expected * BigInt(10000 - config.slippageBps)) / 10000n;
   const tx = buildBuyTx(launch, amountWei, minOut);
   const venue = launch.phase;
 
+  onStep('buying');
   if (config.dryRun) {
     await simulate(tx); // throws if the real thing would revert
+    onStep('burning');
     return { venue, ethSpent: amountWei, tokensBurned: expected, buyTx: null, burnTx: null };
   }
 
   const buyRc = await send(tx);
   const { spent } = await ethSpentInTx(launch, buyRc.hash);
   const held = await contract(launch.address, 'token').balanceOf(wallet.address);
+  onStep('burning');
   const burnRc = await send({ to: launch.address, data: iface.token.encodeFunctionData('burn', [held]) });
   return { venue, ethSpent: spent || amountWei, tokensBurned: held, buyTx: buyRc.hash, burnTx: burnRc.hash };
 }

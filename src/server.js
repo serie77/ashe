@@ -18,6 +18,7 @@ function snapshot() {
     network: config.network,
     rules: RULES,
     status: live.status,
+    phase: live.phase,
     nextLookAt: live.nextLookAt,
     explorer: config.explorer,
     head: live.head,
@@ -51,6 +52,7 @@ export function startServer() {
   };
   events.on('update', push);
   events.on('burn', push);
+  events.on('phase', push);
 
   createServer(async (req, res) => {
     const path = new URL(req.url, 'http://x').pathname;

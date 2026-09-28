@@ -90,6 +90,15 @@ if (config.token && config.token.toLowerCase() !== UNDERHOOD) {
     if (mine.creatorFeeRecipient.toLowerCase() !== me.toLowerCase()) throw new Error(`fees go to ${mine.creatorFeeRecipient}, not the furnace ${me}`);
     return me;
   });
+  await check('furnace can claim from the pons escrow', async () => {
+    const esc = new ethers.Interface(['function balanceOf(address) view returns (uint256)', 'function claim()']);
+    const [block] = await chain.provider.send('eth_simulateV1', [{ blockStateCalls: [{
+      stateOverrides: { [me]: { balance: ethers.toQuantity(ethers.parseEther('1')) } },
+      calls: [{ from: me, to: ADDR.feeEscrow, data: esc.encodeFunctionData('balanceOf', [me]) }, { from: me, to: ADDR.feeEscrow, data: esc.encodeFunctionData('claim') }, { from: me, to: ADDR.feeEscrow, data: esc.encodeFunctionData('balanceOf', [me]) }],
+    }] }, 'latest']);
+    if (block.calls[1].status !== '0x1') throw new Error('claim reverted');
+    return `owed ${ethers.formatEther(BigInt(block.calls[0].returnData))} ETH, after claim ${ethers.formatEther(BigInt(block.calls[2].returnData))}`;
+  });
 }
 
 console.log(failed ? `\n${failed} check(s) failed` : '\nall checks passed');

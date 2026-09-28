@@ -57,6 +57,7 @@ function roll(el, to, fmt, ms = 1600) {
 
 // ashe beside the name, and her outline in the footer
 $('brand-moth').innerHTML = mothSvg({ levels: 3, beat: true });
+$('watch-moth').innerHTML = mothSvg({ levels: 2, beat: true });
 $('colophon-moth').innerHTML = mothSvg({ levels: 7, outline: true });
 
 // ---------- tree ----------
@@ -133,17 +134,25 @@ function paintRules(r) {
   ].map((t) => `<li><span>${t}</span></li>`).join('');
 }
 
-// where the money comes from: pump.fun creator fees, all of them, to the furnace
+// where the money comes from: this launch's real pons fee terms, read from chain by the server
 function paintFuel(f) {
   const fuel = $('fuel');
-  fuel.style.setProperty('--furnace', '100%');
-  fuel.style.setProperty('--pons', '0%');
-  $('fuel-furnace').textContent = 'all';
-  $('fuel-pons').textContent = '';
+  fuel.hidden = !f;
+  if (!f) return;
+  const pc = (bps) => +(bps / 100).toFixed(2) + '%';
+  const share = f.tradeFeeBps * (1 - f.ponsShareBps / 10000); // the creator's side of the trade fee
+  const locked = share * (f.lockShareBps / 10000); // pons's own buyback-and-lock, if it was switched on
+  const furnace = share - locked + f.creatorTaxBps;
+  const total = f.tradeFeeBps + f.creatorTaxBps;
+  fuel.style.setProperty('--furnace', (furnace / total) * 100 + '%');
+  fuel.style.setProperty('--pons', ((total - furnace) / total) * 100 + '%');
+  $('fuel-furnace').textContent = pc(furnace);
+  $('fuel-pons').textContent = pc(total - furnace);
   $('fuel-lines').innerHTML =
-    `<li><i>fees</i><span>every buy and sell of the token on pump.fun pays a creator fee, in sol.</span></li>` +
-    `<li><i>furnace</i><span>ashe's creator wallet is the furnace, so every creator fee lands there.</span></li>` +
-    `<li><i>then</i><span>the furnace claims them, and that is its whole budget. nothing else goes in.</span></li>`;
+    `<li><b>${pc(f.tradeFeeBps)}</b><span>the pons trade fee. pons keeps ${pc(f.ponsShareBps)} of it, the furnace gets the rest.</span></li>` +
+    (f.creatorTaxBps ? `<li><b>${pc(f.creatorTaxBps)}</b><span>the creator tax, fixed when the token launched. all of it goes to the furnace.</span></li>` : '') +
+    (locked ? `<li><b>${pc(locked)}</b><span>is taken by pons's own buyback-and-lock, which this launch has switched on.</span></li>` : '') +
+    `<li><i>then</i><span>the fees wait in the pons escrow. the furnace claims them, and that is its whole budget. nothing else goes in.</span></li>`;
 }
 
 // why the furnace did what it did on one look, line by line
@@ -161,9 +170,9 @@ function trace(d, s) {
   if (d.reason === 'heartbeat') rows.push(row('go', '→', '<b>heartbeat</b>: too long without a buy', `${d.idleMin ?? '·'} of ${r.maxIdleMin} min`));
   else if (d.outcome === 'waited' && d.idleMin !== undefined) rows.push(row('', '·', 'heartbeat not due', `idle ${d.idleMin} of ${r.maxIdleMin} min`));
   if (d.amountEth) {
-    if (d.frac) rows.push(row('go', '→', d.reason === 'jev' ? `size <b>${d.size.toFixed(2)}</b> of 2` : 'heartbeat size', `${Math.round(d.frac * 100)}% of ${fmtEth(d.budgetEth)} sol`));
+    if (d.frac) rows.push(row('go', '→', d.reason === 'jev' ? `size <b>${d.size.toFixed(2)}</b> of 2` : 'heartbeat size', `${Math.round(d.frac * 100)}% of ${fmtEth(d.budgetEth)} eth`));
     const links = d.buyTx ? `<a href="${s.explorer}/tx/${d.buyTx}" target="_blank" rel="noopener">buy ↗</a><a href="${s.explorer}/tx/${d.burnTx}" target="_blank" rel="noopener">burn ↗</a>` : '';
-    rows.push(row('go', '→', d.outcome === 'rehearsed' ? `<b>rehearsed</b>: ${fmtEth(d.amountEth)} sol for ${fmtTok(d.tokens)} tokens` : `<b>bought and burned</b> ${fmtTok(d.tokens)} tokens for ${fmtEth(d.amountEth)} eth`, d.outcome === 'rehearsed' ? 'simulated, nothing sent' : links));
+    rows.push(row('go', '→', d.outcome === 'rehearsed' ? `<b>rehearsed</b>: ${fmtEth(d.amountEth)} eth for ${fmtTok(d.tokens)} tokens` : `<b>bought and burned</b> ${fmtTok(d.tokens)} tokens for ${fmtEth(d.amountEth)} eth`, d.outcome === 'rehearsed' ? 'simulated, nothing sent' : links));
   } else rows.push(row('', '→', d.outcome === 'failed' ? 'tried to buy. <b>the chain refused</b>, it will retry' : '<b>held.</b> nothing bought', ''));
   return rows.join('');
 }
@@ -175,20 +184,20 @@ function paintMind(s) {
   flow.update(s);
   const list = s.decisions;
   // ashe reacts to each new look: a twitch for a wait, a flight to the fire for a buy
-  if (list[0] && lastLook !== null && list[0].ts !== lastLook) {
-    if (list[0].outcome === 'burned' || list[0].outcome === 'rehearsed') tree.moth.excite();
-    else tree.moth.flick();
-  }
   if (list[0]) lastLook = list[0].ts;
   const d = pinned !== null ? list.find((x) => x.ts === pinned) ?? list[0] : list[0];
   $('d-latest').hidden = pinned === null;
 
   const strip = $('strip');
+  strip.style.setProperty('--bar', s.rules?.minConfidence ?? 0.55); // the dashed line: how sure jev has to be
+  $('h-from').textContent = list.length ? `${list.length} looks ago` : '';
   strip.replaceChildren(
-    ...[...list].reverse().map((x) => {
+    ...[...list].reverse().map((x, i) => {
       const b = document.createElement('button');
       b.className = (x.outcome === 'burned' || x.outcome === 'rehearsed' ? 'fire ' : x.outcome === 'failed' ? 'fail ' : '') + (x.ts === d?.ts ? 'on' : '');
-      b.title = `${stamp(x.ts)} · ${x.outcome}`;
+      b.style.setProperty('--h', (x.probabilities?.buy_now ?? 0).toFixed(3));
+      b.style.setProperty('--i', i);
+      b.title = `${stamp(x.ts)} · wanted to buy ${Math.round((x.probabilities?.buy_now ?? 0) * 100)}% · ${x.outcome}`;
       b.onclick = () => ((pinned = x.ts === list[0].ts ? null : x.ts), paintMind(state), flow.play(x, `replaying the look from ${stamp(x.ts)}.`));
       return b;
     }),
@@ -223,7 +232,7 @@ function paintLedger(s) {
 
   setTicker(
     s.burns.length
-      ? s.burns.slice(0, 14).map((b) => `burned <b>${fmtInt(b.tokensBurned)}</b>${b.ethSpent ? ` for ${fmtEth(b.ethSpent)} sol` : ''}, ${ago(b.ts)}`)
+      ? s.burns.slice(0, 14).map((b) => `burned <b>${fmtInt(b.tokensBurned)}</b>${b.ethSpent ? ` for ${fmtEth(b.ethSpent)} eth` : ''}, ${ago(b.ts)}`)
       : ['the furnace is cold', 'nothing burned yet', 'jev is watching'],
   );
 
@@ -245,7 +254,7 @@ function paintLedger(s) {
         <td><span class="ago">${ago(b.ts)}</span><span class="abs">${stamp(b.ts)}</span></td>
         <td class="r">${b.ethSpent ? fmtEth(b.ethSpent) : '·'}</td>
         <td class="r tok">${fmtInt(b.tokensBurned)}</td>
-        <td>${b.venue === 'v4' ? 'pumpswap' : b.venue === 'curve' ? 'pump.fun curve' : '·'}</td>
+        <td>${b.venue === 'v4' ? 'uniswap v4' : b.venue === 'curve' ? 'pons curve' : '·'}</td>
         <td>${by}</td>
         <td class="r">${links}</td></tr>`;
     })
@@ -295,21 +304,84 @@ function paintColophon(s) {
     row(s.token ? `token · ${s.token.symbol}` : 'token', s.token?.address) +
     row('furnace wallet', s.furnace?.address) +
     (s.watch && s.watch.toLowerCase() !== s.furnace?.address.toLowerCase() ? row('burns shown are by', s.watch) : '') +
-    '';
+    (s.network === 'mainnet' ? row('pons factory', '0x7ed598bcef8bd9edd8c97a195c6d13f40801ec7e') + row('pons fee escrow', '0xd3afeb2a57f70ef218aa82451c51b2fb0416ac9e') : '') +
+    row('uniswap universal router', '0x8876789976decbfcbbbe364623c63652db8c0904');
   $('fine-mode').textContent = {
     standby: 'standby: no token is wired yet.',
     watch: 'watch mode: the furnace is not trading, the page only reads the chain.',
     rehearsal: 'rehearsal: jev is consulted for real and every buy is simulated against the live pool, but nothing is sent.',
-    live: s.network === 'testnet' ? 'devnet: every buy and burn here is a real transaction on solana devnet.' : '',
+    live: s.network === 'testnet' ? 'testnet: every buy and burn here is a real transaction on robinhood chain testnet, in a uniswap v4 pool. pons is mainnet only.' : '',
   }[s.mode];
 }
 
 // ---------- wiring ----------
+// ---------- the watch: jev's live state, as it happens ----------
+let lastPhaseAt = 0;
+let watchUntil = 0; // after a look ends, its outcome stays on the watch for a moment
+let liveLookTs = null;
+function showWatch(text, mode) {
+  const w = $('watch');
+  w.hidden = false;
+  w.dataset.mode = mode;
+  $('watch-text').innerHTML = text;
+}
+// live steps can arrive within a second of each other; each holds the watch long enough to be read
+const HOLD = { thinking: 2200, fire: 1400, calm: 0, idle: 0 };
+let watchQueue = Promise.resolve();
+let watchBusy = 0;
+function setWatch(text, mode, linger = 0) {
+  watchBusy++;
+  watchQueue = watchQueue
+    .then(() => (showWatch(text, mode), new Promise((r) => setTimeout(r, still ? 0 : HOLD[mode] ?? 0))))
+    .then(() => { watchBusy--; if (linger) watchUntil = Date.now() + linger; });
+}
+function onPhase(s) {
+  const ph = s.phase;
+  if (!ph || ph.at === lastPhaseAt) return;
+  lastPhaseAt = ph.at;
+  flow ??= createFlow({ fmtEth, fmtTok });
+  if (['asking', 'decided', 'buying', 'burning'].includes(ph.name)) flow.live(ph);
+  if (ph.name === 'asking') {
+    liveLookTs = null;
+    tree.moth.flick();
+    setWatch('jev is thinking<i class="dots"><b>.</b><b>.</b><b>.</b></i>', 'thinking');
+  } else if (ph.name === 'decided') {
+    liveLookTs = ph.ts;
+    const conf = ph.jev.confidence.toFixed(2);
+    if (ph.reason) {
+      tree.moth.excite();
+      setWatch(ph.reason === 'heartbeat' ? 'heartbeat buy' : `jev said <b>buy</b> · ${conf}`, 'fire');
+    } else {
+      setWatch(`jev said <b>wait</b> · ${conf}`, 'calm', 4500);
+    }
+  } else if (ph.name === 'buying') setWatch(`buying · ${fmtEth(ph.amountEth)} eth`, 'fire');
+  else if (ph.name === 'burning') setWatch('burning<i class="dots"><b>.</b><b>.</b><b>.</b></i>', 'fire');
+}
+function onLookLanded(s) {
+  const d = s.decisions[0];
+  if (!d || d.ts !== liveLookTs) return;
+  liveLookTs = null;
+  if (d.amountEth) setWatch(d.outcome === 'rehearsed' ? `rehearsed · ${fmtTok(d.tokens)} would burn` : d.outcome === 'failed' ? 'the chain refused. retrying' : `burned <b>${fmtTok(d.tokens)}</b>`, d.outcome === 'failed' ? 'calm' : 'fire', 6000);
+}
+// between looks the watch counts down to the next one, once the hero (which has its own countdown) is out of view
+setInterval(() => {
+  if (!state) return;
+  const busy = (state.phase && state.phase.name !== 'idle') || watchBusy;
+  if (busy || Date.now() < watchUntil) return;
+  const left = Math.max(0, Math.round((state.nextLookAt - Date.now()) / 1000));
+  const pastHero = scrollY > document.querySelector('.stage-wrap').offsetHeight - innerHeight * 0.5;
+  if (!state.nextLookAt || state.mode === 'watch' || state.mode === 'standby' || !pastHero) return ($('watch').dataset.mode = 'gone');
+  showWatch(left ? `jev looks again in ${left}s` : 'jev is about to look', 'idle');
+}, 500);
+$('watch').onclick = () => document.getElementById('flow').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
 function paint(s) {
   state = s;
   paintHero(s);
   paintReadouts(s);
+  onPhase(s);
   paintMind(s);
+  onLookLanded(s);
   paintLedger(s);
   paintSupply(s);
   paintColophon(s);

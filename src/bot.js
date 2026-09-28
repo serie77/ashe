@@ -15,6 +15,8 @@ export const live = {
   market: null,
   furnace: null,
   status: 'warming up',
+  // what the furnace is doing right now, pushed to the site the moment it changes
+  phase: { name: 'idle', at: 0 },
   nextLookAt: 0,
 };
 
@@ -33,6 +35,13 @@ export const RULES = {
   maxBuyEth: config.maxBuyEth,
   slippageBps: config.slippageBps,
 };
+const PHASE_TEXT = { reading: 'reading the chain', asking: 'jev is thinking', buying: 'buying', burning: 'burning', idle: '' };
+function phase(name, extra = {}) {
+  live.phase = { name, at: Date.now(), ...extra };
+  if (PHASE_TEXT[name]) live.status = PHASE_TEXT[name];
+  events.emit('phase');
+}
+
 const eth = (wei) => Number(ethers.formatEther(wei));
 const round = (n, d = 2) => Number(n.toFixed(d));
 let lastActionTs = Date.now();
@@ -83,6 +92,7 @@ async function think(launch) {
     market: live.market,
     furnace: { budget_eth: round(budget, 5), minutes_since_last_buyback: idleMin },
   };
+  phase('asking', { market: live.market, budgetEth: round(budget, 5) });
   const jev = await askJev(state);
 
   const chasing = jev.chasing >= RULES.chasingMax;
@@ -91,6 +101,7 @@ async function think(launch) {
   else if (idleMin >= config.maxIdleMin && !chasing) reason = 'heartbeat';
 
   const decision = { ts: Date.now(), ...jev, market: live.market, budgetEth: round(budget, 5), idleMin, outcome: 'waited', reason };
+  phase('decided', { ts: decision.ts, jev, reason });
   if (reason) {
     const size = Math.min(2, Math.max(0, jev.size));
     const frac = reason === 'jev' ? RULES.sizeMin + ((RULES.sizeMax - RULES.sizeMin) * size) / 2 : RULES.heartbeatFrac;
@@ -98,7 +109,7 @@ async function think(launch) {
     const amountEth = Math.min(Math.max(budget * frac, config.minBuyEth), config.maxBuyEth, budget);
     const amountWei = ethers.parseEther(amountEth.toFixed(18));
     try {
-      const r = await chain.buyAndBurn(launch, amountWei);
+      const r = await chain.buyAndBurn(launch, amountWei, (step) => phase(step, { amountEth: round(eth(amountWei), 6) }));
       lastActionTs = Date.now();
       decision.amountEth = eth(r.ethSpent);
       decision.tokens = eth(r.tokensBurned);
@@ -120,6 +131,7 @@ async function think(launch) {
 }
 
 async function cycle() {
+  phase('reading');
   const launch = await chain.refreshPhase(live.launch);
   live.head = await chain.provider.getBlockNumber();
 
@@ -149,6 +161,8 @@ export async function startBot() {
   live.launch = await chain.loadLaunch(config.token);
   BLOCKS_PER_MIN = await chain.blocksPerMinute();
   openLedger(live.launch.address);
+  if (chain.wallet && live.launch.creatorFeeRecipient && live.launch.creatorFeeRecipient.toLowerCase() !== chain.wallet.address.toLowerCase())
+    console.log(`${config.name}: creator fees go to ${live.launch.creatorFeeRecipient}, not the furnace. nothing will be claimed until that wallet calls transferCreatorFeeRecipient(${live.launch.address}, ${chain.wallet.address}) on the pons factory.`);
   console.log(`${config.name}: ${live.mode} on ${config.network}, ${live.launch.symbol} (${live.launch.phase})` + (chain.wallet ? `, furnace ${chain.wallet.address}` : ''));
 
   const loop = async () => {
@@ -158,6 +172,7 @@ export async function startBot() {
       console.error('cycle failed:', err.shortMessage || err.message);
       live.status = 'chain unreachable, retrying';
     }
+    live.phase = { name: 'idle', at: Date.now() };
     live.nextLookAt = Date.now() + config.intervalSec * 1000;
     events.emit('update');
     setTimeout(loop, config.intervalSec * 1000);
